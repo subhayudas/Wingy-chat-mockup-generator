@@ -304,29 +304,29 @@ function drawComposer(ctx: CanvasRenderingContext2D, height: number, typingText 
     ctx.fillStyle = "#21b86b"; ctx.beginPath(); ctx.arc(1010, y + 59, 43, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.moveTo(993, y + 38); ctx.lineTo(1033, y + 59); ctx.lineTo(993, y + 80); ctx.lineTo(1004, y + 59); ctx.closePath(); ctx.fill();
   } else {
-    // The camera is deliberately a touch larger and heavier than the other
-    // composer glyphs so it stays legible after the mockup is scaled down.
-    const cameraX = 866;
-    const cameraY = y + 34;
+    // Keep the camera compact while retaining enough stroke weight to remain
+    // recognizable after the mockup is scaled down.
+    const cameraX = 870;
+    const cameraY = y + 36;
     ctx.strokeStyle = "#111";
-    ctx.lineWidth = 5.2;
+    ctx.lineWidth = 4.8;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.beginPath();
-    ctx.roundRect(cameraX, cameraY, 70, 53, 9);
+    ctx.roundRect(cameraX, cameraY, 62, 46, 8);
     ctx.stroke();
     ctx.beginPath();
-    ctx.arc(cameraX + 35, cameraY + 27, 15, 0, Math.PI * 2);
+    ctx.arc(cameraX + 31, cameraY + 23, 12.5, 0, Math.PI * 2);
     ctx.stroke();
     ctx.beginPath();
-    ctx.moveTo(cameraX + 12, cameraY);
-    ctx.lineTo(cameraX + 21, cameraY - 12);
-    ctx.lineTo(cameraX + 48, cameraY - 12);
-    ctx.lineTo(cameraX + 58, cameraY);
+    ctx.moveTo(cameraX + 11, cameraY);
+    ctx.lineTo(cameraX + 19, cameraY - 10);
+    ctx.lineTo(cameraX + 43, cameraY - 10);
+    ctx.lineTo(cameraX + 52, cameraY);
     ctx.stroke();
     ctx.fillStyle = "#111";
     ctx.beginPath();
-    ctx.arc(cameraX + 58, cameraY + 12, 3.2, 0, Math.PI * 2);
+    ctx.arc(cameraX + 51, cameraY + 11, 2.7, 0, Math.PI * 2);
     ctx.fill();
 
     // A smaller send-area control brings the composer closer to the iOS
