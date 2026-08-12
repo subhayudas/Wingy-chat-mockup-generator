@@ -21,6 +21,7 @@ test("server-renders the Wingy chat video studio", async () => {
 
   const html = await response.text();
   assert.match(html, /<title>Wingy Studio — UGC Chat Video Generator<\/title>/i);
+  assert.match(html, /href="\/favicon\.ico"/i);
   assert.match(html, /Make the chat/);
   assert.match(html, /ZIP filename/);
   assert.match(html, /Photo/);
@@ -32,7 +33,11 @@ test("server-renders the Wingy chat video studio", async () => {
 });
 
 test("keeps the media and video controls wired into the canvas renderer", async () => {
-  const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  const [page, favicon] = await Promise.all([
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../public/favicon.ico", import.meta.url)),
+  ]);
+  assert.deepEqual([...favicon.subarray(0, 4)], [0, 0, 1, 0]);
   assert.match(page, /kind: "file"/);
   assert.match(page, /kind: "image" \| "sticker"/);
   assert.match(page, /accept="image\/png,image\/jpeg,image\/webp"/);
