@@ -2,6 +2,7 @@
 
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import NextImage from "next/image";
+import type { WingyConversation, WingyTone } from "@/lib/wingy-conversation";
 
 type Speaker = "user" | "wingy";
 type MessageKind = "text" | "file" | "image" | "sticker";
@@ -31,37 +32,6 @@ const seedMessages: Message[] = [
   { id: 6, speaker: "wingy", text: "Stories cost him one thumb tap. A real conversation costs intention." },
 ];
 
-const reads = {
-  ghost: {
-    opener: "did I miss something or did he just disappear?",
-    reaction: "Oof. The sequel announcement followed by immediate cancellation 💀",
-    read: "A great night can be real and he can still disappear when real follow-through starts.",
-    sting: "Chemistry tells you the date was good. Consistency tells you the person is.",
-    action: "No detective work. One clean text, then the silence gets to be information.",
-  },
-  green: {
-    opener: "Is he a green flag?",
-    reaction: "Okay, I read the chats. He's 76% green flag.",
-    read: "The receipts: 🟢 he follows up. 🟢 he texts first on boring days. 🟨 nine hours to reply Friday — normally a flag, but he was at his sister's thing.",
-    sting: "You say the hard thing eventually. ‘Eventually’ was four days. So you're sitting at 68% yourself.",
-    action: "Want to fix that before he notices?",
-  },
-  rank: {
-    opener: "Rate all the men I dated this year",
-    reaction: "All five? Okay. Ranked worst to best.",
-    read: "5. Work guy — 2/10. 89 messages. Zero questions about you. He wasn't texting you, he was thinking out loud.",
-    sting: "2. The one you keep going back to — 5/10. He's not confusing. He's consistent. You just don't like the pattern.",
-    action: "1. The boring one — 8/10. Asked about your day 41 times. Remembered your interview. Never once made you wait.",
-  },
-  generic: {
-    opener: "what's your honest read on this?",
-    reaction: "Okay, I read the chats. Here are the receipts.",
-    read: "Pay less attention to the explanation and more to what the pattern asks you to tolerate.",
-    sting: "Confusion is usually what inconsistency feels like from inside the conversation.",
-    action: "Make one clear move. Then watch what they do without coaching them through it.",
-  },
-};
-
 const imageCache = new Map<string, HTMLImageElement>();
 const CHAT_FONT = "35px -apple-system, BlinkMacSystemFont, Arial";
 const CHAT_TEXT_MAX_WIDTH = 710;
@@ -74,39 +44,9 @@ function loadCanvasImage(src: string, onLoad: () => void) {
   image.src = src;
 }
 
-function chooseRead(theme: string) {
-  const value = theme.toLowerCase();
-  if (/ghost|disappear|left on read/.test(value)) return reads.ghost;
-  if (/green flag/.test(value)) return reads.green;
-  if (/rate|rank|men i dated/.test(value)) return reads.rank;
-  return reads.generic;
-}
-
 function makeZip(name: string, id = Date.now()): Message {
   const clean = (name.trim() || "WhatsAppChat.zip").replace(/\.zip$/i, "");
   return { id, speaker: "user", kind: "file", text: `${clean}.zip`, meta: "9 KB · zip" };
-}
-
-function generateScript(theme: string, tone: Tone, count: number, zipName: string, media: Message[]) {
-  const source = chooseRead(theme || hooks[0]);
-  const reaction = tone === "Soft" ? source.reaction.replace(/ 💀/g, "") : source.reaction;
-  const lines: Omit<Message, "id">[] = [
-    { speaker: "user", text: source.opener },
-    { speaker: "wingy", text: reaction },
-    { speaker: "wingy", text: source.read },
-    { speaker: "user", text: "okay, keep going" },
-    { speaker: "wingy", text: tone === "Sharp" ? source.sting : source.sting.replace("usually", "often") },
-    { speaker: "user", text: "so what do I actually do?" },
-    { speaker: "wingy", text: source.action },
-    { speaker: "user", text: "that's fair 😭" },
-    { speaker: "wingy", text: "The pattern is the answer. You don't need another clue." },
-  ];
-  const now = Date.now();
-  return [
-    makeZip(zipName, now),
-    ...media.map((item, index) => ({ ...item, id: now + index + 1 })),
-    ...lines.slice(0, count).map((message, index) => ({ ...message, id: now + media.length + index + 1 })),
-  ];
 }
 
 function readingTime(text: string) {
@@ -458,11 +398,13 @@ export default function Home() {
   const [playing, setPlaying] = useState(false);
   const [playTime, setPlayTime] = useState(99);
   const [exporting, setExporting] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
   const [renderVersion, setRenderVersion] = useState(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const startedAt = useRef(0);
+  const messageId = useRef(1000);
   const logoSrc = "/wingy-logo.jpeg";
   const dimensions = format === "reference" ? { width: 1080, height: 1296 } : { width: 1080, height: 1920 };
   const timeline = useMemo(() => timelineFor(messages), [messages]);
@@ -517,6 +459,36 @@ export default function Home() {
   };
 
   const preview = () => { setPlayTime(0); startedAt.current = performance.now(); setPlaying(true); };
+
+  const generateConversation = async () => {
+    const toneMap: Record<Tone, WingyTone> = { Playful: "playful", Sharp: "sharp", Soft: "soft" };
+    const targetSeconds = count === 5 ? 20 : count === 9 ? 36 : 28;
+    setGenerating(true);
+    setError("");
+    try {
+      const response = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ theme, tone: toneMap[tone], target_seconds: targetSeconds }),
+      });
+      const payload = await response.json() as WingyConversation & { error?: string };
+      if (!response.ok) throw new Error(payload.error || "Conversation generation failed.");
+      const now = messageId.current += 100;
+      const generatedText = payload.messages
+        .filter((message) => message.kind === "text")
+        .map((message, index) => ({ ...message, kind: "text" as const, id: now + mediaMessages.length + index + 1 }));
+      setMessages([
+        makeZip(zipName, now),
+        ...mediaMessages.map((message, index) => ({ ...message, id: now + index + 1 })),
+        ...generatedText,
+      ]);
+      setPlayTime(99);
+    } catch (generationError) {
+      setError(generationError instanceof Error ? generationError.message : "Conversation generation failed.");
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   const exportVideo = async () => {
     const canvas = canvasRef.current;
@@ -595,7 +567,7 @@ export default function Home() {
             <div><div className="formLabel">Tone</div><div className="segmented">{(["Playful", "Sharp", "Soft"] as Tone[]).map((value) => <button className={tone === value ? "active" : ""} onClick={() => setTone(value)} key={value}>{value}</button>)}</div></div>
             <div><label htmlFor="length">Length</label><select id="length" value={count} onChange={(event) => setCount(Number(event.target.value))}><option value={5}>Quick · ~16s</option><option value={7}>Ideal · ~24s</option><option value={9}>Full · ~32s</option></select></div>
           </div>
-          <button className="generate" onClick={() => { setMessages(generateScript(theme, tone, count, zipName, mediaMessages)); setPlayTime(99); }}><Icon name="spark" /> Generate conversation</button>
+          <button className="generate" disabled={generating} onClick={generateConversation}>{generating ? <span className="renderingDot" /> : <Icon name="spark" />} {generating ? "Writing in Wingy voice…" : "Generate conversation"}</button>
 
           <div className="divider" />
           <div className="sectionHeading compact"><span>02</span><div><h2>Edit every beat</h2><p>Change the copy, sender, caption, or order of the story.</p></div></div>

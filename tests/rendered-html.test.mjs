@@ -30,6 +30,25 @@ test("uses the native Next.js build expected by Vercel", async () => {
   assert.match(packageJson.dependencies.next, /^16\./);
 });
 
+test("routes conversation generation through the Wingy UGC skill prompt", async () => {
+  const [page, route, skill] = await Promise.all([
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/generate/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../lib/wingy-conversation.ts", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(page, /fetch\("\/api\/generate"/);
+  assert.doesNotMatch(page, /function generateScript/);
+  assert.match(route, /WINGY_RUNTIME_SYSTEM_PROMPT/);
+  assert.match(route, /ai-wingy\.services\.ai\.azure\.com/);
+  assert.match(route, /AZURE_AI_FOUNDRY_KEY/);
+  assert.match(route, /DeepSeek-V4-Flash/);
+  assert.match(route, /response_format/);
+  assert.match(skill, /sassy\+\+/);
+  assert.match(skill, /React first, then give the real read/);
+  assert.match(skill, /The chat export must be the first message/);
+});
+
 test("keeps the media and video controls wired into the canvas renderer", async () => {
   const [page, favicon] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
@@ -55,6 +74,7 @@ test("keeps the media and video controls wired into the canvas renderer", async 
   assert.match(page, /function drawShareIcon/);
   assert.match(page, /ctx\.bezierCurveTo\(x - 15, y - 2/);
   assert.match(page, /const CHAT_TIME = "12:31 PM"/);
-  assert.match(page, /outgoing \? `\$\{CHAT_TIME\} ✓✓` : CHAT_TIME/);
+  assert.match(page, /drawMessageMeta\(ctx, CHAT_TIME/);
+  assert.match(page, /if \(outgoing\) drawDeliveryTicks/);
   assert.doesNotMatch(page, /"1:20 PM"/);
 });
