@@ -223,6 +223,38 @@ function drawStickerGlyph(ctx: CanvasRenderingContext2D, x: number, y: number) {
   ctx.stroke();
 }
 
+function drawDeliveryTicks(ctx: CanvasRenderingContext2D, x: number, y: number) {
+  ctx.save();
+  ctx.strokeStyle = "#53bdeb";
+  ctx.lineWidth = 3.4;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
+  // Two overlapping vector checks match WhatsApp's read-receipt mark much
+  // more closely than a pair of font glyphs, which vary across platforms.
+  ctx.beginPath();
+  ctx.moveTo(x, y + 8);
+  ctx.lineTo(x + 6, y + 14);
+  ctx.lineTo(x + 18, y + 2);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(x + 9, y + 8);
+  ctx.lineTo(x + 15, y + 14);
+  ctx.lineTo(x + 27, y + 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawMessageMeta(ctx: CanvasRenderingContext2D, time: string, x: number, y: number, outgoing: boolean) {
+  ctx.font = "21px -apple-system, BlinkMacSystemFont, Arial";
+  ctx.fillStyle = outgoing ? "#667781" : "#7d817e";
+  ctx.textAlign = "right";
+  ctx.fillText(time, outgoing ? x - 42 : x, y);
+  ctx.textAlign = "left";
+  if (outgoing) drawDeliveryTicks(ctx, x - 31, y - 15);
+}
+
 function drawSecurityNotice(ctx: CanvasRenderingContext2D) {
   const x = 160;
   const y = 211;
@@ -272,9 +304,51 @@ function drawComposer(ctx: CanvasRenderingContext2D, height: number, typingText 
     ctx.fillStyle = "#21b86b"; ctx.beginPath(); ctx.arc(1010, y + 59, 43, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.moveTo(993, y + 38); ctx.lineTo(1033, y + 59); ctx.lineTo(993, y + 80); ctx.lineTo(1004, y + 59); ctx.closePath(); ctx.fill();
   } else {
-    ctx.strokeStyle = "#191919"; ctx.lineWidth = 4; ctx.beginPath(); ctx.roundRect(874, y + 38, 61, 46, 7); ctx.stroke(); ctx.beginPath(); ctx.arc(904, y + 61, 14, 0, Math.PI * 2); ctx.stroke(); ctx.moveTo(886, y + 38); ctx.lineTo(894, y + 27); ctx.lineTo(914, y + 27); ctx.lineTo(923, y + 38); ctx.stroke();
-    ctx.fillStyle = "#21b86b"; ctx.beginPath(); ctx.arc(1010, y + 59, 43, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = "#fff"; ctx.lineWidth = 5; ctx.beginPath(); ctx.roundRect(999, y + 32, 22, 40, 11); ctx.stroke(); ctx.beginPath(); ctx.arc(1010, y + 57, 24, 0, Math.PI); ctx.stroke(); ctx.moveTo(1010, y + 81); ctx.lineTo(1010, y + 90); ctx.stroke();
+    // The camera is deliberately a touch larger and heavier than the other
+    // composer glyphs so it stays legible after the mockup is scaled down.
+    const cameraX = 866;
+    const cameraY = y + 34;
+    ctx.strokeStyle = "#111";
+    ctx.lineWidth = 5.2;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    ctx.roundRect(cameraX, cameraY, 70, 53, 9);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cameraX + 35, cameraY + 27, 15, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cameraX + 12, cameraY);
+    ctx.lineTo(cameraX + 21, cameraY - 12);
+    ctx.lineTo(cameraX + 48, cameraY - 12);
+    ctx.lineTo(cameraX + 58, cameraY);
+    ctx.stroke();
+    ctx.fillStyle = "#111";
+    ctx.beginPath();
+    ctx.arc(cameraX + 58, cameraY + 12, 3.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // A smaller send-area control brings the composer closer to the iOS
+    // proportions and gives the camera its own clear visual space.
+    const micX = 1010;
+    const micY = y + 59;
+    ctx.fillStyle = "#21b86b";
+    ctx.beginPath();
+    ctx.arc(micX, micY, 35, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 4.2;
+    ctx.beginPath();
+    ctx.roundRect(micX - 9, micY - 23, 18, 34, 9);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(micX, micY + 4, 19, 0, Math.PI);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(micX, micY + 23);
+    ctx.lineTo(micX, micY + 29);
+    ctx.stroke();
   }
 }
 
@@ -318,7 +392,9 @@ function drawWhatsApp(canvas: HTMLCanvasElement, messages: Message[], time: numb
         ctx.save(); ctx.beginPath(); ctx.roundRect(x, y, 315, 260, 16); ctx.clip(); drawCover(ctx, image, x, y, 315, 260); ctx.restore();
       } else { ctx.fillStyle = "rgba(255,255,255,.9)"; roundedRect(ctx, x, y, 315, 260, 16); }
       if (item.text) { ctx.fillStyle = "#fff"; roundedRect(ctx, x + 35, y + 232, 245, 52, 9); ctx.fillStyle = "#111"; ctx.font = "600 29px Arial"; ctx.textAlign = "center"; ctx.fillText(item.text, x + 157, y + 267); ctx.textAlign = "left"; }
-      ctx.fillStyle = "rgba(255,255,255,.95)"; roundedRect(ctx, x + 58, y + 289, 122, 34, 12); ctx.fillStyle = "#7b817e"; ctx.font = "22px Arial"; ctx.textAlign = "center"; ctx.fillText(CHAT_TIME, x + 119, y + 314); ctx.textAlign = "left";
+      const metaWidth = outgoing ? 168 : 126;
+      ctx.fillStyle = "rgba(255,255,255,.95)"; roundedRect(ctx, x + 58, y + 289, metaWidth, 34, 12);
+      drawMessageMeta(ctx, CHAT_TIME, x + 58 + metaWidth - 12, y + 314, outgoing);
       y += item.messageHeight + 14; continue;
     }
 
@@ -353,8 +429,7 @@ function drawWhatsApp(canvas: HTMLCanvasElement, messages: Message[], time: numb
       ctx.fillStyle = "#151515"; ctx.font = CHAT_FONT;
       item.lines.forEach((line, index) => ctx.fillText(line, x + 28, y + 39 + index * 43));
     }
-    ctx.fillStyle = outgoing ? "#54866e" : "#7d817e"; ctx.font = "21px -apple-system, BlinkMacSystemFont, Arial"; ctx.textAlign = "right";
-    ctx.fillText(outgoing ? `${CHAT_TIME} ✓✓` : CHAT_TIME, x + bubbleWidth - 18, y + item.messageHeight - 11); ctx.textAlign = "left";
+    drawMessageMeta(ctx, CHAT_TIME, x + bubbleWidth - 18, y + item.messageHeight - 11, outgoing);
     y += item.messageHeight + 14;
   }
 
