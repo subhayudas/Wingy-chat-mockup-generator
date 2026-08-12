@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     shortcut: "/favicon.ico",
     apple: "/wingy-logo.jpeg",
   },
-  metadataBase: new URL("https://wingy-ugc-studio.priyansha914729.chatgpt.site"),
+  metadataBase: new URL("https://wingy-chat-mockup-generator.vercel.app"),
   openGraph: {
     title: "Wingy Studio — UGC Chat Video Generator",
     description: "Turn a dating take into a chat worth watching.",
