@@ -4,6 +4,14 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Wingy Studio — UGC Chat Video Generator",
   description: "Write Wingy-voiced conversations and export perfectly paced vertical WhatsApp videos.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", type: "image/x-icon", sizes: "64x64" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/wingy-logo.jpeg",
+  },
   metadataBase: new URL("https://wingy-ugc-studio.priyansha914729.chatgpt.site"),
   openGraph: {
     title: "Wingy Studio — UGC Chat Video Generator",
