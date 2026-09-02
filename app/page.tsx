@@ -142,24 +142,27 @@ function drawShareIcon(ctx: CanvasRenderingContext2D, x: number, y: number) {
   ctx.closePath(); ctx.fill();
 }
 
-function drawStickerGlyph(ctx: CanvasRenderingContext2D, x: number, y: number) {
-  const width = 44;
-  const height = 39;
-  ctx.strokeStyle = "#191919"; ctx.lineWidth = 4; ctx.lineCap = "round"; ctx.lineJoin = "round";
+function drawStickerGlyph(ctx: CanvasRenderingContext2D, x: number, y: number, width = 44, height = 39) {
+  // Proportional so the glyph keeps its shape at the reference size (51 x 50).
+  const rx = width * 0.227;
+  const ry = height * 0.256;
+  const foldX = width * 0.659;
+  const foldY = height * 0.615;
+  ctx.strokeStyle = "#191919"; ctx.lineWidth = 4.7; ctx.lineCap = "round"; ctx.lineJoin = "round";
   ctx.beginPath();
-  ctx.moveTo(x + 10, y);
-  ctx.lineTo(x + width - 10, y);
-  ctx.quadraticCurveTo(x + width, y, x + width, y + 10);
-  ctx.lineTo(x + width, y + 24);
-  ctx.quadraticCurveTo(x + width, y + height, x + width - 15, y + height);
-  ctx.lineTo(x + 10, y + height);
-  ctx.quadraticCurveTo(x, y + height, x, y + height - 10);
-  ctx.lineTo(x, y + 10);
-  ctx.quadraticCurveTo(x, y, x + 10, y);
+  ctx.moveTo(x + rx, y);
+  ctx.lineTo(x + width - rx, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + ry);
+  ctx.lineTo(x + width, y + foldY);
+  ctx.quadraticCurveTo(x + width, y + height, x + foldX, y + height);
+  ctx.lineTo(x + rx, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - ry);
+  ctx.lineTo(x, y + ry);
+  ctx.quadraticCurveTo(x, y, x + rx, y);
   ctx.stroke();
   ctx.beginPath();
-  ctx.moveTo(x + width - 15, y + height);
-  ctx.bezierCurveTo(x + width - 15, y + 29, x + width - 8, y + 24, x + width, y + 24);
+  ctx.moveTo(x + foldX, y + height);
+  ctx.bezierCurveTo(x + foldX, y + height * 0.744, x + width * 0.818, y + foldY, x + width, y + foldY);
   ctx.stroke();
 }
 
@@ -195,9 +198,8 @@ function drawMessageMeta(ctx: CanvasRenderingContext2D, time: string, x: number,
   if (outgoing) drawDeliveryTicks(ctx, x - 31, y - 15);
 }
 
-function drawSecurityNotice(ctx: CanvasRenderingContext2D) {
+function drawSecurityNotice(ctx: CanvasRenderingContext2D, y = 211) {
   const x = 160;
-  const y = 211;
   const width = 760;
   const lineHeight = 31;
   ctx.font = "27px -apple-system, BlinkMacSystemFont, Arial";
@@ -231,64 +233,107 @@ function drawHeader(ctx: CanvasRenderingContext2D, logo?: HTMLImageElement) {
   ctx.fillStyle = "#101010"; ctx.font = "600 41px -apple-system, BlinkMacSystemFont, Arial"; ctx.fillText("Wingy", 278, 84);
 }
 
-function drawComposer(ctx: CanvasRenderingContext2D, height: number, typingText = "") {
-  const y = height - 116;
-  ctx.fillStyle = "rgba(250,249,246,.98)"; ctx.fillRect(0, y, 1080, 116);
-  ctx.strokeStyle = "#181818"; ctx.lineWidth = 5; ctx.lineCap = "round";
-  ctx.beginPath(); ctx.moveTo(48, y + 33); ctx.lineTo(48, y + 87); ctx.moveTo(21, y + 60); ctx.lineTo(75, y + 60); ctx.stroke();
-  ctx.fillStyle = "#fff"; ctx.strokeStyle = "#d1d2d0"; ctx.lineWidth = 2; ctx.beginPath(); ctx.roundRect(102, y + 20, 746, 79, 40); ctx.fill(); ctx.stroke();
-  if (typingText) { ctx.fillStyle = "#252525"; ctx.font = "35px -apple-system, BlinkMacSystemFont, Arial"; ctx.fillText(typingText, 130, y + 70); }
-  ctx.strokeStyle = "#1c1c1c"; ctx.lineWidth = 4;
-  drawStickerGlyph(ctx, 783, y + 40);
-  if (typingText) {
-    ctx.fillStyle = "#21b86b"; ctx.beginPath(); ctx.arc(1010, y + 59, 43, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.moveTo(993, y + 38); ctx.lineTo(1033, y + 59); ctx.lineTo(993, y + 80); ctx.lineTo(1004, y + 59); ctx.closePath(); ctx.fill();
-  } else {
-    // Keep the camera compact while retaining enough stroke weight to remain
-    // recognizable after the mockup is scaled down.
-    const cameraX = 870;
-    const cameraY = y + 36;
-    ctx.strokeStyle = "#111";
-    ctx.lineWidth = 4.8;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.beginPath();
-    ctx.roundRect(cameraX, cameraY, 62, 46, 8);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(cameraX + 31, cameraY + 23, 12.5, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(cameraX + 11, cameraY);
-    ctx.lineTo(cameraX + 19, cameraY - 10);
-    ctx.lineTo(cameraX + 43, cameraY - 10);
-    ctx.lineTo(cameraX + 52, cameraY);
-    ctx.stroke();
-    ctx.fillStyle = "#111";
-    ctx.beginPath();
-    ctx.arc(cameraX + 51, cameraY + 11, 2.7, 0, Math.PI * 2);
-    ctx.fill();
+// Chrome geometry, measured off the reference recording at 1080 canvas width.
+const HEADER_HEIGHT = 142;
+const COMPOSER_HEIGHT = 132;
+// The transcript column: date divider, security notice, then the bubbles.
+const TODAY_TOP = 157;
+const TODAY_HEIGHT = 39;
+const NOTICE_TOP = 211;
+const CONVERSATION_TOP = 340;
+const MESSAGE_GAP = 14;
+// The reference settles each new bubble 20px above the composer and eases the
+// jump over ~0.145s — four frames of its 30fps capture, ease-in-out both ends.
+const SCROLL_BOTTOM_GAP = 20;
+const SCROLL_DURATION = 0.145;
 
-    // A smaller send-area control brings the composer closer to the iOS
-    // proportions and gives the camera its own clear visual space.
-    const micX = 1010;
-    const micY = y + 59;
+function easeInOutCubic(t: number) {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+function drawTodayPill(ctx: CanvasRenderingContext2D, y: number) {
+  ctx.fillStyle = "rgba(255,255,255,.93)";
+  roundedRect(ctx, 472, y, 136, TODAY_HEIGHT, 12);
+  ctx.fillStyle = "#292929";
+  ctx.font = "600 25px -apple-system, BlinkMacSystemFont, Arial";
+  ctx.textAlign = "center";
+  ctx.fillText("Today", 540, y + 27);
+  ctx.textAlign = "left";
+}
+
+function drawComposer(ctx: CanvasRenderingContext2D, height: number, typingText = "") {
+  const y = height - COMPOSER_HEIGHT;
+  // Every control shares one centre line, 70px below the composer's top edge.
+  const mid = y + 70;
+  // Radius of the trailing round button, shared by the mic and send states.
+  const buttonR = 36;
+  ctx.fillStyle = "rgba(250,249,246,.98)";
+  ctx.fillRect(0, y, 1080, COMPOSER_HEIGHT);
+
+  // Attachment "+"
+  ctx.strokeStyle = "#181818"; ctx.lineWidth = 4.7; ctx.lineCap = "round"; ctx.lineJoin = "round";
+  ctx.beginPath();
+  ctx.moveTo(63, mid - 25.2); ctx.lineTo(63, mid + 25.2);
+  ctx.moveTo(37.8, mid); ctx.lineTo(88.2, mid);
+  ctx.stroke();
+
+  // Input field
+  ctx.fillStyle = "#fff"; ctx.strokeStyle = "#d1d2d0"; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.roundRect(132, y + 33, 687, 78, 39); ctx.fill(); ctx.stroke();
+
+  if (typingText) {
+    ctx.fillStyle = "#252525";
+    ctx.font = "35px -apple-system, BlinkMacSystemFont, Arial";
+    ctx.fillText(typingText, 160, mid + 12);
+  } else {
+    // Idle caret: WhatsApp draws a round-capped bar in the accent green.
+    ctx.strokeStyle = "#137a4a"; ctx.lineWidth = 4; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(168, y + 52.5); ctx.lineTo(168, y + 91.5); ctx.stroke();
+  }
+
+  drawStickerGlyph(ctx, 742.5, y + 49.5, 45.5, 44);
+
+  if (typingText) {
     ctx.fillStyle = "#21b86b";
+    ctx.beginPath(); ctx.arc(1017, mid, buttonR, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#fff";
     ctx.beginPath();
-    ctx.arc(micX, micY, 35, 0, Math.PI * 2);
+    ctx.moveTo(1017 - 0.48 * buttonR, mid - 0.59 * buttonR);
+    ctx.lineTo(1017 + 0.66 * buttonR, mid);
+    ctx.lineTo(1017 - 0.48 * buttonR, mid + 0.59 * buttonR);
+    ctx.lineTo(1017 - 0.16 * buttonR, mid);
+    ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = "#fff";
-    ctx.lineWidth = 4.2;
+  } else {
+    // Camera: body, lens, viewfinder hump and the little indicator dot.
+    const bodyLeft = 876;
+    const bodyRight = 935;
+    const bodyTop = mid - 16.4;
+    ctx.strokeStyle = "#111"; ctx.lineWidth = 4.7; ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.beginPath(); ctx.roundRect(bodyLeft, bodyTop, bodyRight - bodyLeft, 39, 8); ctx.stroke();
     ctx.beginPath();
-    ctx.roundRect(micX - 9, micY - 23, 18, 34, 9);
+    ctx.moveTo(bodyLeft + 17, bodyTop);
+    ctx.lineTo(bodyLeft + 23, bodyTop - 5.5);
+    ctx.lineTo(bodyLeft + 37, bodyTop - 5.5);
+    ctx.lineTo(bodyLeft + 43, bodyTop);
     ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(micX, micY + 4, 19, 0, Math.PI);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(micX, micY + 23);
-    ctx.lineTo(micX, micY + 29);
-    ctx.stroke();
+    ctx.beginPath(); ctx.arc(906.5, mid + 2.2, 12.2, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = "#111";
+    ctx.beginPath(); ctx.arc(924.5, mid - 7.2, 3.9, 0, Math.PI * 2); ctx.fill();
+
+    // Mic laid out on WhatsApp's own 24-unit icon grid: a filled capsule head
+    // spanning units 9-15 across and 2-14 down with fully rounded ends, a
+    // 5-unit cradle arc centred at unit 11, and a 3-unit stem down to unit 19.
+    const micX = 1017;
+    const u = buttonR * 0.06;
+    const gy = (unit: number) => mid + (unit - 10.7) * u;
+    ctx.fillStyle = "#21b86b";
+    ctx.beginPath(); ctx.arc(micX, mid, buttonR, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#fff";
+    ctx.beginPath(); ctx.roundRect(micX - 3 * u, gy(2), 6 * u, 12 * u, 3 * u); ctx.fill();
+    ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.6 * u; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.arc(micX, gy(11), 5 * u, 0, Math.PI); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(micX, gy(16)); ctx.lineTo(micX, gy(19)); ctx.stroke();
   }
 }
 
@@ -298,31 +343,53 @@ function drawWhatsApp(canvas: HTMLCanvasElement, messages: Message[], time: numb
   const scale = canvas.width / 1080;
   ctx.save(); ctx.scale(scale, scale);
   const height = canvas.height / scale;
+  const composerTop = height - COMPOSER_HEIGHT;
   drawWallpaper(ctx, height);
-  drawHeader(ctx, imageCache.get(logoSrc));
 
   const timed = timelineFor(messages);
-  const visible = timed.filter((item) => time >= item.reveal);
   const typing = timed.find((item) => item.speaker === "user" && time >= item.typingStart && time < item.reveal && !item.kind);
   ctx.font = CHAT_FONT;
-  const layouts = visible.map((message) => {
+
+  // Measure the whole transcript up front so the resting scroll offset after
+  // each reveal is known, and the animated offset stays a pure function of time.
+  const layouts = timed.map((message) => {
     const lines = message.kind && message.kind !== "text" ? [message.text] : wrapText(ctx, message.text, CHAT_TEXT_MAX_WIDTH);
     const messageHeight = message.kind === "file" ? 145 : message.kind === "image" ? 365 : message.kind === "sticker" ? 310 : Math.max(78, lines.length * 43 + 43);
     return { ...message, lines, messageHeight };
   });
 
-  const contentHeight = layouts.reduce((sum, item) => sum + item.messageHeight + 14, 0);
-  const conversationTop = 340;
-  let y = Math.max(conversationTop, height - 135 - contentHeight);
-  if (contentHeight < height - conversationTop - 125) y = conversationTop;
-
-  if (y <= conversationTop) {
-    ctx.fillStyle = "rgba(255,255,255,.93)"; roundedRect(ctx, 472, 157, 136, 39, 12);
-    ctx.fillStyle = "#292929"; ctx.font = "600 25px -apple-system, BlinkMacSystemFont, Arial"; ctx.textAlign = "center"; ctx.fillText("Today", 540, 184); ctx.textAlign = "left";
-    drawSecurityNotice(ctx);
+  const tops: number[] = [];
+  const restingOffsets = [0];
+  let cursor = CONVERSATION_TOP;
+  for (const item of layouts) {
+    tops.push(cursor);
+    restingOffsets.push(Math.max(0, cursor + item.messageHeight + SCROLL_BOTTOM_GAP - composerTop));
+    cursor += item.messageHeight + MESSAGE_GAP;
   }
 
-  for (const item of layouts) {
+  const revealed = layouts.filter((item) => time >= item.reveal).length;
+  let offset = restingOffsets[revealed];
+  if (revealed > 0) {
+    const progress = (time - layouts[revealed - 1].reveal) / SCROLL_DURATION;
+    if (progress < 1) {
+      const from = restingOffsets[revealed - 1];
+      offset = from + (restingOffsets[revealed] - from) * easeInOutCubic(Math.max(0, progress));
+    }
+  }
+
+  // The transcript lives between the header and the composer and slides behind
+  // both, so a new bubble rises out from under the composer as the list scrolls.
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, HEADER_HEIGHT, 1080, composerTop - HEADER_HEIGHT);
+  ctx.clip();
+
+  drawSecurityNotice(ctx, NOTICE_TOP - offset);
+
+  for (let index = 0; index < revealed; index += 1) {
+    const item = layouts[index];
+    const y = tops[index] - offset;
+    if (y > composerTop || y + item.messageHeight + 40 < HEADER_HEIGHT) continue;
     const outgoing = item.speaker === "user";
     const bubble = outgoing ? "#c9f7be" : "#ffffff";
     if (item.kind === "sticker") {
@@ -335,7 +402,7 @@ function drawWhatsApp(canvas: HTMLCanvasElement, messages: Message[], time: numb
       const metaWidth = outgoing ? 168 : 126;
       ctx.fillStyle = "rgba(255,255,255,.95)"; roundedRect(ctx, x + 58, y + 289, metaWidth, 34, 12);
       drawMessageMeta(ctx, CHAT_TIME, x + 58 + metaWidth - 12, y + 314, outgoing);
-      y += item.messageHeight + 14; continue;
+      continue;
     }
 
     let bubbleWidth = 790;
@@ -367,12 +434,17 @@ function drawWhatsApp(canvas: HTMLCanvasElement, messages: Message[], time: numb
       if (item.text) { ctx.fillStyle = "#171717"; ctx.font = "31px -apple-system, BlinkMacSystemFont, Arial"; ctx.fillText(item.text, x + 22, y + 335); }
     } else {
       ctx.fillStyle = "#151515"; ctx.font = CHAT_FONT;
-      item.lines.forEach((line, index) => ctx.fillText(line, x + 28, y + 39 + index * 43));
+      item.lines.forEach((line, lineIndex) => ctx.fillText(line, x + 28, y + 39 + lineIndex * 43));
     }
     drawMessageMeta(ctx, CHAT_TIME, x + bubbleWidth - 18, y + item.messageHeight - 11, outgoing);
-    y += item.messageHeight + 14;
   }
 
+  // The date divider is sticky: it holds its place while the transcript
+  // scrolls behind it, exactly as WhatsApp pins it.
+  drawTodayPill(ctx, Math.max(TODAY_TOP, TODAY_TOP - offset));
+  ctx.restore();
+
+  drawHeader(ctx, imageCache.get(logoSrc));
   drawComposer(ctx, height, typing ? typing.text.slice(0, Math.max(1, Math.floor(((time - typing.typingStart) / (typing.reveal - typing.typingStart)) * typing.text.length))) : "");
   ctx.restore();
 }
