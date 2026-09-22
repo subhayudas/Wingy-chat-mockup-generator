@@ -45,6 +45,13 @@ test("routes conversation generation through the Wingy UGC skill prompt", async 
   assert.match(route, /DeepSeek-V4-Flash/);
   assert.match(route, /response_format/);
   assert.match(route, /data_mode: "staged"/);
+  // A hook may be a whole pasted script, and a run may have no hook at all.
+  assert.doesNotMatch(route, /between 1 and 600 characters/);
+  assert.match(route, /source_conversation: context/);
+  assert.match(route, /Add a video hook, or paste a conversation to build from/);
+  assert.match(page, /Use paste as-is/);
+  assert.match(page, /Rewrite in Wingy voice/);
+  assert.match(page, /generateFromPaste = \(\) => runGenerator\(\{ source: pasted \}\)/);
   assert.match(skill, /sassy\+\+/);
   assert.match(skill, /RECEIPTS → REAL READ → ROAST → NEXT MOVE/);
   assert.match(skill, /Wingy must send more messages than the user/);

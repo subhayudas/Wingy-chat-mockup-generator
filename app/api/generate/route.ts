@@ -80,9 +80,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  const theme = input.theme?.trim();
-  if (!theme || theme.length > 600) {
-    return NextResponse.json({ error: "Enter a video hook between 1 and 600 characters." }, { status: 400 });
+  // A hook can be a few words or a whole pasted script, and a run can be
+  // driven by source material with no hook at all. Long input is trimmed to
+  // keep the request sane rather than refused.
+  const theme = input.theme?.trim().slice(0, 4000);
+  const context = input.context?.trim().slice(0, 8000);
+  if (!theme && !context) {
+    return NextResponse.json(
+      { error: "Add a video hook, or paste a conversation to build from." },
+      { status: 400 },
+    );
   }
 
   const tone = input.tone ?? "sassy_plus_plus";
@@ -112,7 +119,9 @@ export async function POST(request: Request) {
               // lands on 7–8, so the caller restates the budget as data.
               messages_after_attachment: WINGY_TARGET_MESSAGES - 1,
               total_messages_including_attachment: WINGY_TARGET_MESSAGES,
-              ...(input.context?.trim() ? { context: input.context.trim().slice(0, 1200) } : {}),
+              // Source material the reel should be built from: a chat the user
+              // pasted, or a draft to rewrite in Wingy's voice.
+              ...(context ? { source_conversation: context } : {}),
             }),
           },
         ],
@@ -128,7 +137,7 @@ export async function POST(request: Request) {
       throw new Error(apiError?.message || `Azure AI Foundry request failed (${upstream.status}).`);
     }
     return validateWingyConversation(parseEnvelope(responseText(payload)), {
-      hook: theme,
+      hook: theme || "Pasted conversation",
       tone,
       target_seconds: targetSeconds,
       attachment_type: "chat_export",

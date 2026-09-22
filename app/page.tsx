@@ -535,16 +535,19 @@ export default function Home() {
 
   const preview = () => { setPlayTime(0); startedAt.current = performance.now(); setPlaying(true); };
 
-  const generateConversation = async () => {
+  // `source` is a pasted conversation the reel should be built from. Passing it
+  // without a hook is the "generate from this paste" path.
+  const runGenerator = async ({ hook, source }: { hook?: string; source?: string }) => {
     const toneMap: Record<Tone, WingyTone> = { Playful: "playful", Sharp: "sharp", Soft: "soft" };
     const targetSeconds = count === 5 ? 20 : count === 9 ? 36 : 28;
     setGenerating(true);
     setError("");
+    setPasteNote("");
     try {
       const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ theme, tone: toneMap[tone], target_seconds: targetSeconds }),
+        body: JSON.stringify({ theme: hook, context: source, tone: toneMap[tone], target_seconds: targetSeconds }),
       });
       const payload = await response.json() as WingyConversation & { error?: string };
       if (!response.ok) throw new Error(payload.error || "Conversation generation failed.");
@@ -564,6 +567,9 @@ export default function Home() {
       setGenerating(false);
     }
   };
+
+  const generateConversation = () => runGenerator({ hook: theme });
+  const generateFromPaste = () => runGenerator({ source: pasted });
 
   const applyPastedConversation = () => {
     const parsed = parseConversationBlob(pasted);
@@ -677,7 +683,10 @@ export default function Home() {
             onChange={(event) => { setPasted(event.target.value); setPasteNote(""); }}
           />
           <p className="pasteHint">Written elsewhere? Drop the whole thing in — labelled lines, numbered beats, a WhatsApp export or the generator’s JSON. It replaces the beats below.</p>
-          <button className="add" disabled={!pasted.trim()} onClick={applyPastedConversation}><Icon name="plus" /> Turn paste into beats</button>
+          <div className="pasteActions">
+            <button className="add" disabled={!pasted.trim() || generating} onClick={applyPastedConversation}><Icon name="plus" /> Use paste as-is</button>
+            <button className="add" disabled={!pasted.trim() || generating} onClick={generateFromPaste}>{generating ? <span className="renderingDot" /> : <Icon name="spark" />} {generating ? "Writing\u2026" : "Rewrite in Wingy voice"}</button>
+          </div>
           {pasteNote ? <p className="pasteNote">{pasteNote}</p> : null}
 
           <div className="divider" />
