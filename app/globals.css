@@ -47,6 +47,8 @@ textarea { resize:vertical; padding:12px 13px; line-height:1.42; }
 .assetCard span { margin-top:2px; color:#8d8780; font-size:8px; }
 .assetAction { border:0; color:#147247; background:transparent; font-size:9px; font-weight:800; padding:6px; margin:0; cursor:pointer; }
 .formDivider,.divider { height:1px; background:var(--line); }
+.pasteHint { margin:7px 0 10px; font-size:11px; line-height:1.55; color:var(--muted); }
+.pasteNote { margin:9px 0 0; font-size:11px; font-weight:600; color:var(--green); }
 .formDivider { margin:24px 0 22px; }
 .divider { margin:32px 0 27px; }
 .suggestions { display:flex; flex-wrap:wrap; gap:6px; margin:9px 0 20px; }

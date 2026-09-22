@@ -3,6 +3,7 @@
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import NextImage from "next/image";
 import type { WingyConversation, WingyTone } from "@/lib/wingy-conversation";
+import { parseConversationBlob } from "@/lib/parse-conversation";
 
 type Speaker = "user" | "wingy";
 type MessageKind = "text" | "file" | "image" | "sticker";
@@ -473,6 +474,8 @@ export default function Home() {
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
+  const [pasted, setPasted] = useState("");
+  const [pasteNote, setPasteNote] = useState("");
   const [renderVersion, setRenderVersion] = useState(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const startedAt = useRef(0);
@@ -562,6 +565,29 @@ export default function Home() {
     }
   };
 
+  const applyPastedConversation = () => {
+    const parsed = parseConversationBlob(pasted);
+    if (!parsed.length) {
+      setPasteNote("");
+      setError("No messages found in that paste. Label the lines (\u201cWingy:\u201d / \u201cUser:\u201d) or paste the generator\u2019s JSON.");
+      return;
+    }
+    const now = messageId.current += 100;
+    setMessages([
+      makeZip(zipName, now),
+      ...mediaMessages.map((message, index) => ({ ...message, id: now + index + 1 })),
+      ...parsed.map((message, index) => ({
+        speaker: message.speaker,
+        kind: "text" as const,
+        text: message.text,
+        id: now + mediaMessages.length + index + 1,
+      })),
+    ]);
+    setError("");
+    setPasteNote(`Added ${parsed.length} message${parsed.length === 1 ? "" : "s"} to the mockup.`);
+    setPlayTime(99);
+  };
+
   const exportVideo = async () => {
     const canvas = canvasRef.current;
     if (!canvas || !("MediaRecorder" in window)) { setError("Video export needs a current version of Chrome, Edge, or Safari."); return; }
@@ -640,6 +666,19 @@ export default function Home() {
             <div><label htmlFor="length">Length</label><select id="length" value={count} onChange={(event) => setCount(Number(event.target.value))}><option value={5}>Quick · ~16s</option><option value={7}>Ideal · ~24s</option><option value={9}>Full · ~32s</option></select></div>
           </div>
           <button className="generate" disabled={generating} onClick={generateConversation}>{generating ? <span className="renderingDot" /> : <Icon name="spark" />} {generating ? "Writing in Wingy voice…" : "Generate conversation"}</button>
+
+          <div className="formDivider" />
+          <label htmlFor="paste">Or paste a conversation</label>
+          <textarea
+            id="paste"
+            value={pasted}
+            rows={4}
+            placeholder={"Wingy: I read all 4,382 messages so you don\u2019t have to.\nUser: okay that was personal"}
+            onChange={(event) => { setPasted(event.target.value); setPasteNote(""); }}
+          />
+          <p className="pasteHint">Written elsewhere? Drop the whole thing in — labelled lines, numbered beats, a WhatsApp export or the generator’s JSON. It replaces the beats below.</p>
+          <button className="add" disabled={!pasted.trim()} onClick={applyPastedConversation}><Icon name="plus" /> Turn paste into beats</button>
+          {pasteNote ? <p className="pasteNote">{pasteNote}</p> : null}
 
           <div className="divider" />
           <div className="sectionHeading compact"><span>02</span><div><h2>Edit every beat</h2><p>Change the copy, sender, caption, or order of the story.</p></div></div>
