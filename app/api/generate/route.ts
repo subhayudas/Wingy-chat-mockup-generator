@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import {
   validateWingyConversation,
-  WINGY_MAX_MESSAGES,
   WINGY_MAX_SECONDS,
   WINGY_MIN_SECONDS,
   WINGY_RUNTIME_SYSTEM_PROMPT,
+  WINGY_TARGET_MESSAGES,
   type WingyTone,
 } from "@/lib/wingy-conversation";
 
@@ -110,8 +110,8 @@ export async function POST(request: Request) {
               data_mode: "staged",
               // DeepSeek reads the prompt's "5–6 messages" as a soft hint and
               // lands on 7–8, so the caller restates the budget as data.
-              messages_after_attachment: WINGY_MAX_MESSAGES - 1,
-              total_messages_including_attachment: WINGY_MAX_MESSAGES,
+              messages_after_attachment: WINGY_TARGET_MESSAGES - 1,
+              total_messages_including_attachment: WINGY_TARGET_MESSAGES,
               ...(input.context?.trim() ? { context: input.context.trim().slice(0, 1200) } : {}),
             }),
           },

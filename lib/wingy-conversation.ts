@@ -38,9 +38,13 @@ export type WingyConversation = {
 // route echoes it back rather than making the model restate it.
 export type WingyModelOutput = { messages: WingyGeneratedMessage[] };
 
-// The prompt's contract: the attachment, then 5–6 messages.
+// The prompt's contract: the attachment, then 5–6 messages. WINGY_TARGET is
+// what the caller asks for; DeepSeek overshoots it on some hooks and burns
+// every retry, so the validator tolerates one extra beat rather than showing
+// the user an error. Anything longer still gets re-asked.
 export const WINGY_MIN_MESSAGES = 6;
-export const WINGY_MAX_MESSAGES = 7;
+export const WINGY_TARGET_MESSAGES = 7;
+export const WINGY_MAX_MESSAGES = 8;
 
 // The prompt's runtime window. The UI's "Full · ~32s" preset asks for 36s, so
 // the route clamps to this rather than briefing against the prompt.
