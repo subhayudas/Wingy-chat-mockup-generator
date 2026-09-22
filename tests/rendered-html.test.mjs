@@ -44,8 +44,10 @@ test("routes conversation generation through the Wingy UGC skill prompt", async 
   assert.match(route, /AZURE_AI_FOUNDRY_KEY/);
   assert.match(route, /DeepSeek-V4-Flash/);
   assert.match(route, /response_format/);
+  assert.match(route, /data_mode: "staged"/);
   assert.match(skill, /sassy\+\+/);
-  assert.match(skill, /React first, then give the real read/);
+  assert.match(skill, /RECEIPTS → REAL READ → ROAST → NEXT MOVE/);
+  assert.match(skill, /Wingy must send more messages than the user/);
   assert.match(skill, /The chat export must be the first message/);
 });
 
@@ -64,7 +66,7 @@ test("keeps the media and video controls wired into the canvas renderer", async 
   assert.match(page, /format === "reference"/);
   assert.match(page, /format === "vertical"/);
   assert.match(page, /drawComposer/);
-  assert.match(page, /wingy-logo\.jpeg/);
+  assert.match(page, /wingy-logo\.png/);
   assert.match(page, /const CHAT_FONT =/);
   assert.match(page, /ctx\.font = CHAT_FONT;\s*const widest/);
   assert.match(page, /ctx\.measureText\(candidate\)\.width > maxWidth/);

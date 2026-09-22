@@ -10,7 +10,7 @@ export const metadata: Metadata = {
       { url: "/favicon.svg", type: "image/svg+xml" },
     ],
     shortcut: "/favicon.ico",
-    apple: "/wingy-logo.jpeg",
+    apple: "/wingy-logo.png",
   },
   metadataBase: new URL("https://wingy-chat-mockup-generator.vercel.app"),
   openGraph: {

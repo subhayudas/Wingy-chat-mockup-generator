@@ -477,7 +477,7 @@ export default function Home() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const startedAt = useRef(0);
   const messageId = useRef(1000);
-  const logoSrc = "/wingy-logo.jpeg";
+  const logoSrc = "/wingy-logo.png";
   const dimensions = format === "reference" ? { width: 1080, height: 1296 } : { width: 1080, height: 1920 };
   const timeline = useMemo(() => timelineFor(messages), [messages]);
   const duration = (timeline.at(-1)?.reveal || 0) + readingTime(messages.at(-1)?.text || "") + 0.6;
